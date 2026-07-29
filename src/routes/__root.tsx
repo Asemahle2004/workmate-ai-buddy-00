@@ -1,6 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
-  Outlet,
   Link,
   createRootRouteWithContext,
   useRouter,
@@ -11,6 +10,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import AppShell from "../components/workmate/AppShell";
 
 function NotFoundComponent() {
   return (
@@ -77,14 +77,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "WorkMate AI — Your AI Workplace Productivity Assistant" },
+      {
+        name: "description",
+        content:
+          "WorkMate AI is an all-in-one AI productivity platform for emails, meeting summaries, task planning, research, and workplace chat.",
+      },
+      { name: "author", content: "WorkMate AI" },
+      { property: "og:title", content: "WorkMate AI — AI Workplace Productivity" },
+      {
+        property: "og:description",
+        content:
+          "One dashboard for all your workplace AI tools: email drafts, meeting summaries, task plans, research, and a workplace chatbot.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
@@ -119,8 +126,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <AppShell />
     </QueryClientProvider>
   );
 }
