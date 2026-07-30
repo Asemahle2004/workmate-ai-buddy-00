@@ -141,10 +141,10 @@ function Dashboard() {
           <CardContent>
             <div className="flex h-40 w-full min-w-0 items-end gap-1.5 sm:gap-2">
               {stats.weekly.map((v, i) => (
-                <div key={i} className="flex min-w-0 flex-1 flex-col items-center gap-2">
+                <div key={i} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-2">
                   <div
                     className="w-full rounded-t bg-primary/80 transition-all"
-                    style={{ height: `${(v / maxWeek) * 100}%`, minHeight: 6 }}
+                    style={{ height: `${Math.max(4, (v / maxWeek) * 88)}%`, minHeight: 6 }}
                   />
                   <span className="text-[10px] text-muted-foreground">{days[i]}</span>
                 </div>
