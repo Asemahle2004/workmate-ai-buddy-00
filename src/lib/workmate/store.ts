@@ -192,12 +192,15 @@ export const store = {
       chat: "chats",
     };
     const field = map[kind];
-    (s[field] as number) = (s[field] as number) + 1;
-    s.minutesSaved += minutes;
     const weekly = [...s.weekly];
     weekly[weekly.length - 1] = (weekly[weekly.length - 1] ?? 0) + 1;
-    s.weekly = weekly;
-    write(KEY_STATS, s);
+    const next: Stats = {
+      ...s,
+      [field]: (s[field] as number) + 1,
+      minutesSaved: s.minutesSaved + minutes,
+      weekly,
+    };
+    write(KEY_STATS, next);
     emit();
   },
 
