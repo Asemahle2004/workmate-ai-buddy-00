@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Search, Sparkles, Loader2, Copy, RefreshCw, Save, Download, Trash2, Pencil } from "lucide-react";
+import { Search, Sparkles, Loader2, Copy, RefreshCw, Save, Download, Trash2, Pencil, X, Check } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader, AIDisclaimer } from "@/components/workmate/PageHeader";
 import { VerifyCheckbox } from "@/components/workmate/VerifyCheckbox";
@@ -27,10 +27,13 @@ function ResearchPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ResearchOutput | null>(null);
   const [verified, setVerified] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [editedText, setEditedText] = useState<string | null>(null);
 
   const run = async () => {
     if (!topic.trim()) return toast.error("Please enter a research topic.");
-    setLoading(true); setResult(null);
+    setLoading(true); setResult(null); setEditing(false); setEditedText(null);
     await simulateDelay(1400);
     setResult(analyzeTopic({ topic, question, source, audience, depth }));
     setLoading(false); setVerified(false);
@@ -39,10 +42,23 @@ function ResearchPage() {
   const asText = (r: ResearchOutput) =>
     `Overview\n${r.overview}\n\nFindings\n${r.findings.map((x) => `• ${x}`).join("\n")}\n\nInsights\n${r.insights.map((x) => `• ${x}`).join("\n")}\n\nRecommendations\n${r.recommendations.map((x) => `• ${x}`).join("\n")}\n\nOpportunities\n${r.opportunities.map((x) => `• ${x}`).join("\n")}\n\nRisks\n${r.risks.map((x) => `• ${x}`).join("\n")}\n\nNext Steps\n${r.nextSteps.map((x) => `• ${x}`).join("\n")}\n\nVerify\n${r.verify.map((x) => `• ${x}`).join("\n")}`;
 
+  const outputText = (r: ResearchOutput) => editedText ?? asText(r);
+
+  const startEdit = (r: ResearchOutput) => {
+    setDraft(outputText(r));
+    setEditing(true);
+  };
+
+  const saveEdit = () => {
+    setEditedText(draft);
+    setEditing(false);
+    toast.success("Changes saved");
+  };
+
   const save = () => {
     if (!result) return;
     if (!verified) return toast.error("Please confirm you've reviewed the output.");
-    store.addHistory({ kind: "research", title: topic, content: asText(result), saved: true });
+    store.addHistory({ kind: "research", title: topic, content: outputText(result), saved: true });
     store.bumpStat("research", 25);
     toast.success("Saved to history");
   };
@@ -75,7 +91,7 @@ function ResearchPage() {
           </div>
           <div className="flex flex-wrap gap-2">
             <Button onClick={run} disabled={loading}>{loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />} Analyse Topic</Button>
-            <Button variant="outline" onClick={() => { setTopic(""); setQuestion(""); setSource(""); setResult(null); }}><Trash2 className="mr-2 h-4 w-4" /> Clear</Button>
+            <Button variant="outline" onClick={() => { setTopic(""); setQuestion(""); setSource(""); setResult(null); setEditing(false); setEditedText(null); }}><Trash2 className="mr-2 h-4 w-4" /> Clear</Button>
           </div>
           <AIDisclaimer />
         </CardContent>
@@ -83,7 +99,33 @@ function ResearchPage() {
 
       {loading && <Card><CardContent className="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground"><Loader2 className="h-6 w-6 animate-spin text-primary" /> Analysing your information...</CardContent></Card>}
 
-      {result && !loading && (
+      {result && !loading && editing && (
+        <Card>
+          <CardHeader><CardTitle className="text-base">Edit research output</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            <Textarea
+              aria-label="Edit research output"
+              rows={22}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              className="font-mono text-xs"
+            />
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" onClick={saveEdit}><Check className="mr-1.5 h-4 w-4" /> Save changes</Button>
+              <Button size="sm" variant="outline" onClick={() => setEditing(false)}><X className="mr-1.5 h-4 w-4" /> Cancel</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {result && !loading && !editing && editedText !== null && (
+        <Card>
+          <CardHeader><CardTitle className="text-base">Edited research output</CardTitle></CardHeader>
+          <CardContent className="whitespace-pre-wrap text-sm leading-relaxed">{editedText}</CardContent>
+        </Card>
+      )}
+
+      {result && !loading && !editing && editedText === null && (
         <div className="space-y-4">
           <Card><CardHeader><CardTitle className="text-base">Topic Overview</CardTitle></CardHeader><CardContent className="text-sm leading-relaxed">{result.overview}</CardContent></Card>
           <div className="grid gap-4 md:grid-cols-2">
@@ -98,14 +140,19 @@ function ResearchPage() {
             <CardHeader><CardTitle className="text-base">Information That Requires Verification</CardTitle></CardHeader>
             <CardContent><ul className="list-disc space-y-1 pl-5 text-sm">{result.verify.map((x, i) => <li key={i}>{x}</li>)}</ul></CardContent>
           </Card>
+        </div>
+      )}
+
+      {result && !loading && !editing && (
+        <div className="space-y-4">
           <VerifyCheckbox checked={verified} onCheckedChange={setVerified} />
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(asText(result)); toast.success("Copied"); }}><Copy className="mr-1.5 h-4 w-4" /> Copy</Button>
-            <Button variant="outline" size="sm" onClick={() => toast.info("Edit sections inline above.")}><Pencil className="mr-1.5 h-4 w-4" /> Edit</Button>
+            <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(outputText(result)); toast.success("Copied"); }}><Copy className="mr-1.5 h-4 w-4" /> Copy</Button>
+            <Button variant="outline" size="sm" onClick={() => startEdit(result)}><Pencil className="mr-1.5 h-4 w-4" /> Edit</Button>
             <Button variant="outline" size="sm" onClick={run}><RefreshCw className="mr-1.5 h-4 w-4" /> Regenerate</Button>
             <Button size="sm" onClick={save}><Save className="mr-1.5 h-4 w-4" /> Save</Button>
-            <Button variant="outline" size="sm" onClick={() => { const b = new Blob([asText(result)], { type: "text/plain" }); const u = URL.createObjectURL(b); const a = document.createElement("a"); a.href = u; a.download = `research-${Date.now()}.txt`; a.click(); URL.revokeObjectURL(u); }}><Download className="mr-1.5 h-4 w-4" /> Export</Button>
-            <Button variant="ghost" size="sm" onClick={() => setResult(null)}><Trash2 className="mr-1.5 h-4 w-4" /> Clear</Button>
+            <Button variant="outline" size="sm" onClick={() => { const b = new Blob([outputText(result)], { type: "text/plain" }); const u = URL.createObjectURL(b); const a = document.createElement("a"); a.href = u; a.download = `research-${Date.now()}.txt`; a.click(); URL.revokeObjectURL(u); }}><Download className="mr-1.5 h-4 w-4" /> Export</Button>
+            <Button variant="ghost" size="sm" onClick={() => { setResult(null); setEditedText(null); }}><Trash2 className="mr-1.5 h-4 w-4" /> Clear</Button>
           </div>
         </div>
       )}

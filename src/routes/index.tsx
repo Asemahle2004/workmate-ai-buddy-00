@@ -14,7 +14,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { store, useStore } from "@/lib/workmate/store";
+import { store, useStore, useHydrated } from "@/lib/workmate/store";
 import { formatDistanceToNow } from "date-fns";
 
 export const Route = createFileRoute("/")({
@@ -61,6 +61,7 @@ function Dashboard() {
   const stats = useStore(() => store.getStats());
   const history = useStore(() => store.getHistory()).slice(0, 5);
   const settings = useStore(() => store.getSettings());
+  const hydrated = useHydrated();
 
   const hours = Math.floor(stats.minutesSaved / 60);
   const mins = stats.minutesSaved % 60;
@@ -68,7 +69,7 @@ function Dashboard() {
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6">
+    <div className="mx-auto w-full min-w-0 max-w-7xl space-y-6">
       {/* Hero */}
       <Card className="overflow-hidden border-primary/20 bg-gradient-to-br from-primary/10 via-background to-background">
         <CardContent className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
@@ -83,7 +84,7 @@ function Dashboard() {
               your workflow. Save hours every week and focus on the work that matters.
             </p>
           </div>
-          <div className="flex shrink-0 flex-wrap gap-2">
+          <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:shrink-0">
             <Button asChild size="lg">
               <Link to="/chat">
                 Start a new task <ArrowRight className="ml-1.5 h-4 w-4" />
@@ -97,7 +98,7 @@ function Dashboard() {
       </Card>
 
       {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat icon={CheckCircle2} label="Tasks completed" value={stats.tasks} sub="+5 this week" />
         <Stat icon={Mail} label="Emails generated" value={stats.emails} sub="+3 this week" />
         <Stat icon={FileText} label="Meetings summarized" value={stats.meetings} sub="+2 this week" />
@@ -105,17 +106,17 @@ function Dashboard() {
       </div>
 
       {/* Quick access + weekly overview */}
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
+      <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-3">
+        <Card className="min-w-0 lg:col-span-2">
           <CardHeader>
             <CardTitle className="text-base">Quick access</CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-3 sm:grid-cols-2">
+          <CardContent className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
             {TOOLS.map((t) => (
               <Link
                 key={t.to}
                 to={t.to}
-                className="group flex items-start gap-3 rounded-lg border bg-background p-4 transition-colors hover:border-primary/40 hover:bg-primary/5"
+                className="group flex min-w-0 items-start gap-3 rounded-lg border bg-background p-4 transition-colors hover:border-primary/40 hover:bg-primary/5"
               >
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                   <t.icon className="h-5 w-5" />
@@ -130,7 +131,7 @@ function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="min-w-0">
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">Weekly productivity</CardTitle>
@@ -138,12 +139,12 @@ function Dashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="flex h-40 items-end gap-2">
+            <div className="flex h-40 w-full min-w-0 items-end gap-1.5 sm:gap-2">
               {stats.weekly.map((v, i) => (
-                <div key={i} className="flex flex-1 flex-col items-center gap-2">
+                <div key={i} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-2">
                   <div
                     className="w-full rounded-t bg-primary/80 transition-all"
-                    style={{ height: `${(v / maxWeek) * 100}%`, minHeight: 6 }}
+                    style={{ height: `${Math.max(4, (v / maxWeek) * 88)}%`, minHeight: 6 }}
                   />
                   <span className="text-[10px] text-muted-foreground">{days[i]}</span>
                 </div>
@@ -157,8 +158,8 @@ function Dashboard() {
       </div>
 
       {/* Recent activity + start new */}
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
+      <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-3">
+        <Card className="min-w-0 lg:col-span-2">
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">Recent activity</CardTitle>
@@ -170,11 +171,13 @@ function Dashboard() {
           <CardContent className="p-0">
             <ul className="divide-y">
               {history.map((h) => (
-                <li key={h.id} className="flex items-center gap-3 px-6 py-3">
+                <li key={h.id} className="flex min-w-0 items-center gap-3 px-4 py-3 sm:px-6">
                   <Badge variant="secondary" className="capitalize">{h.kind}</Badge>
                   <span className="min-w-0 flex-1 truncate text-sm">{h.title}</span>
                   <span className="shrink-0 text-xs text-muted-foreground">
-                    {formatDistanceToNow(h.createdAt, { addSuffix: true })}
+                    {hydrated && Number.isFinite(h.createdAt)
+                      ? formatDistanceToNow(h.createdAt, { addSuffix: true })
+                      : ""}
                   </span>
                 </li>
               ))}
@@ -187,7 +190,7 @@ function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="min-w-0">
           <CardHeader>
             <CardTitle className="text-base">Start a new task</CardTitle>
           </CardHeader>

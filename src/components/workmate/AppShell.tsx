@@ -213,9 +213,9 @@ export default function AppShell() {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <div className="flex min-h-svh w-full flex-1 flex-col">
+      <div className="flex min-h-svh w-full min-w-0 flex-1 flex-col">
         <TopBar />
-        <main className="flex-1 bg-muted/20 px-4 py-6 sm:px-6 lg:px-8">
+        <main className="min-w-0 flex-1 overflow-x-hidden bg-muted/20 px-4 py-6 sm:px-6 lg:px-8">
           <Outlet />
         </main>
         <ResponsibleFooter />

@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
 export type HistoryKind = "email" | "meeting" | "task" | "research" | "chat";
 
@@ -53,8 +53,13 @@ const KEY_PROMPTS = "workmate.prompts";
 
 const isBrowser = typeof window !== "undefined";
 
+// Until the first client effect runs, reads must return the exact same
+// (server-rendered) values, otherwise hydration mismatches.
+let hydrated = false;
+const EMPTY_PROMPTS: CustomPrompt[] = [];
+
 function read<T>(key: string, fallback: T): T {
-  if (!isBrowser) return fallback;
+  if (!isBrowser || !hydrated) return fallback;
   if (cache.has(key)) return cache.get(key) as T;
   try {
     const raw = localStorage.getItem(key);
@@ -217,7 +222,7 @@ export const store = {
   },
 
   getPrompts(): CustomPrompt[] {
-    return read<CustomPrompt[]>(KEY_PROMPTS, []);
+    return read<CustomPrompt[]>(KEY_PROMPTS, EMPTY_PROMPTS);
   },
   savePrompt(p: Omit<CustomPrompt, "id" | "createdAt"> & { id?: string }) {
     const list = store.getPrompts();
@@ -240,6 +245,7 @@ export const store = {
 };
 
 export function useStore<T>(selector: () => T): T {
+  useHydrateStore();
   return useSyncExternalStore(
     subscribe,
     selector,
@@ -247,8 +253,31 @@ export function useStore<T>(selector: () => T): T {
   );
 }
 
+function useHydrateStore() {
+  useEffect(() => {
+    if (hydrated) return;
+    hydrated = true;
+    emit();
+  }, []);
+}
+
+/** True only after client-side hydration — use to gate locale/time-dependent UI. */
+export function useHydrated() {
+  const [h, setH] = useState(false);
+  useEffect(() => setH(true), []);
+  return h;
+}
+
 export function initTheme() {
   if (!isBrowser) return;
-  const s = store.getSettings();
-  document.documentElement.classList.toggle("dark", s.theme === "dark");
+  // Read storage directly: theme is applied to <html>, so it is not part of
+  // the hydrated React tree and can be set before hydration completes.
+  let theme = seedSettings.theme;
+  try {
+    const raw = localStorage.getItem(KEY_SETTINGS);
+    if (raw) theme = (JSON.parse(raw) as Settings).theme ?? theme;
+  } catch {
+    /* ignore */
+  }
+  document.documentElement.classList.toggle("dark", theme === "dark");
 }
