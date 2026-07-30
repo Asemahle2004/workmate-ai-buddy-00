@@ -55,10 +55,12 @@ const isBrowser = typeof window !== "undefined";
 
 function read<T>(key: string, fallback: T): T {
   if (!isBrowser) return fallback;
+  if (cache.has(key)) return cache.get(key) as T;
   try {
     const raw = localStorage.getItem(key);
-    if (!raw) return fallback;
-    return JSON.parse(raw) as T;
+    const val = raw ? (JSON.parse(raw) as T) : fallback;
+    cache.set(key, val);
+    return val;
   } catch {
     return fallback;
   }
@@ -66,8 +68,13 @@ function read<T>(key: string, fallback: T): T {
 
 function write(key: string, val: unknown) {
   if (!isBrowser) return;
+  cache.set(key, val);
   localStorage.setItem(key, JSON.stringify(val));
 }
+
+// Cached snapshots keep object identity stable between reads, which
+// useSyncExternalStore requires to avoid infinite re-render loops.
+const cache = new Map<string, unknown>();
 
 const listeners = new Set<() => void>();
 function emit() {
