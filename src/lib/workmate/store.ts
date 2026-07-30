@@ -270,6 +270,14 @@ export function useHydrated() {
 
 export function initTheme() {
   if (!isBrowser) return;
-  const s = store.getSettings();
-  document.documentElement.classList.toggle("dark", s.theme === "dark");
+  // Read storage directly: theme is applied to <html>, so it is not part of
+  // the hydrated React tree and can be set before hydration completes.
+  let theme = seedSettings.theme;
+  try {
+    const raw = localStorage.getItem(KEY_SETTINGS);
+    if (raw) theme = (JSON.parse(raw) as Settings).theme ?? theme;
+  } catch {
+    /* ignore */
+  }
+  document.documentElement.classList.toggle("dark", theme === "dark");
 }
