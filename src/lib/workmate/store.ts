@@ -222,7 +222,7 @@ export const store = {
   },
 
   getPrompts(): CustomPrompt[] {
-    return read<CustomPrompt[]>(KEY_PROMPTS, []);
+    return read<CustomPrompt[]>(KEY_PROMPTS, EMPTY_PROMPTS);
   },
   savePrompt(p: Omit<CustomPrompt, "id" | "createdAt"> & { id?: string }) {
     const list = store.getPrompts();
